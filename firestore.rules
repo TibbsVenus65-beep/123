@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: wrongQuestions
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - Owner UID
+    //   - originalQuestion: map (required) - { text, imageUrl, options, userAnswer, correctAnswer, analysis }
+    //   - knowledgePoint: string (required) - Core knowledge point
+    //   - variations: list (required) - Array of { text, answer, analysis, commonMistakes }
+    //   - createdAt: string (required) - ISO 8601 timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function uidUnchanged() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId;
+    }
+
+    function isValidWrongQuestion(data) {
+      return data.userId is string &&
+             data.knowledgePoint is string && data.knowledgePoint.size() < 200 &&
+             data.originalQuestion is map &&
+             data.originalQuestion.text is string && data.originalQuestion.text.size() < 5000 &&
+             data.variations is list && data.variations.size() <= 5 &&
+             data.createdAt is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /wrongQuestions/{questionId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidWrongQuestion(request.resource.data) && uidUnchanged();
+      allow update: if isDocOwner() && isValidWrongQuestion(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner();
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

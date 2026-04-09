@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "WrongQuestion": {
+      "title": "Wrong Question",
+      "description": "A record of a wrong question and its generated variations.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who owns this record." },
+        "originalQuestion": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string" },
+            "imageUrl": { "type": "string" },
+            "options": { "type": "array", "items": { "type": "string" } },
+            "userAnswer": { "type": "string" },
+            "correctAnswer": { "type": "string" },
+            "analysis": { "type": "string" }
+          },
+          "required": ["text"]
+        },
+        "knowledgePoint": { "type": "string", "description": "The core knowledge point identified." },
+        "variations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "answer": { "type": "string" },
+              "analysis": { "type": "string" },
+              "commonMistakes": { "type": "string" }
+            },
+            "required": ["text", "answer", "analysis"]
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "originalQuestion", "knowledgePoint", "variations", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/wrongQuestions/{questionId}": {
+      "schema": "WrongQuestion",
+      "description": "Collection of wrong questions for all users."
+    }
+  }
+}
